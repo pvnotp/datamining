@@ -1,6 +1,6 @@
 # Split a dataset based on a criterion for a specified attribute
 def split(dataset, index, value):
-    left, right = list(), list()
+    left, right = [], []
     for row in dataset:
         if row[index] <= value:
             left.append(row)
@@ -10,16 +10,14 @@ def split(dataset, index, value):
 
 # Calculate probability of a point being in a given class
 def P(c, dataset):
-    count = 0
-    total = 0
+    count = 0.0
     if len(dataset) == 0:
         return 0
     else:
         for row in dataset:
             if(row[-1]==c):
                 count += 1
-            total += 1
-    return count/float(total)
+    return count/len(dataset)
 
 # Helper function for GINI index
 def G(dataset):
@@ -49,14 +47,16 @@ def bestSplit(dataset, criterion):
             if criterion(dataset, i, val) > best:
                 best = criterion(dataset, i, val)
                 best_index, best_value = i, val
-    return {'index':best_index, 'value':best_value,
+    return {'index': best_index, 'value': best_value,
             'groups':split(dataset, best_index, best_value)}
 
-
-# Create a terminal node value
-def terminal(group):
-    outcomes = [row[-1] for row in group]
-    return max(set(outcomes), key=outcomes.count)
+# Get the most common rating in a group of rows
+# This rating will be assigned to the whole group
+def rate(group):
+    ratings = [row[-1] for row in group]
+    #Thanks to newacct at StackOverflow for this oneliner
+    #https://stackoverflow.com/questions/1518522/find-the-most-common-element-in-a-list
+    return max(set(ratings), key=ratings.count)
 
 # Create child splits for a node or make terminal
 def splitNode(node, max_depth, min_size, depth, criterion):
@@ -64,21 +64,21 @@ def splitNode(node, max_depth, min_size, depth, criterion):
     del(node['groups'])
     # check for a no split
     if not left or not right:
-        node['left'] = node['right'] = terminal(left + right)
+        node['left'] = node['right'] = rate(left + right)
         return
     # check for max depth
     if depth >= max_depth:
-        node['left'], node['right'] = terminal(left), terminal(right)
+        node['left'], node['right'] = rate(left), rate(right)
         return
     # process left child
     if len(left) <= min_size:
-        node['left'] = terminal(left)
+        node['left'] = rate(left)
     else:
         node['left'] = bestSplit(left, criterion)
         splitNode(node['left'], max_depth, min_size, depth+1)
     # process right child
     if len(right) <= min_size:
-        node['right'] = terminal(right)
+        node['right'] = rate(right)
     else:
         node['right'] = bestSplit(right, criterion)
         splitNode(node['right'], max_depth, min_size, depth+1)
@@ -114,6 +114,7 @@ def predict(node, row):
         else:
             return node['right']
 
+#Get the ratio of correct predictions
 def accuracy(dataset, tree):
     count = 0
     for row in dataset:
