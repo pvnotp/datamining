@@ -1,25 +1,16 @@
 import numpy
+import csv
 
-dataset = [[2.771244718,1.784783929,0],
-    [1.728571309,1.169761413,0],
-    [3.678319846,2.81281357,0],
-    [3.961043357,2.61995032,0],
-    [2.999208922,2.209014212,0],
-    [7.497545867,3.162953546,1],
-    [9.00220326,3.339047188,1],
-    [7.444542326,0.476683375,1],
-    [10.12493903,3.234550982,1],
-    [6.642287351,3.319983761,1]]
 
-# Split dataset into two classes and remove class labels
+# Split classes into two datasets and remove class labels
 def split(dataset):
-    left, right = [], []
+    good, bad = [], []
     for row in dataset:
         if row[-1] == 0:
-            left.append(row[:-1])
+            good.append(row[:-1])
         else:
-            right.append(row[:-1])
-    return left, right
+            bad.append(row[:-1])
+    return good, bad
 
 #Get mean vector for dataset
 def mean(dataset):
@@ -33,27 +24,28 @@ def mean(dataset):
 
 #Center dataset
 def center(dataset):
+    mu = mean(dataset)
     centered = [[0 for i in range(len(dataset[0]))] for j in range(len(dataset))]
     for i in range(len(dataset)):
         for j in range(len(dataset[j])):
-            centered[i][j] = dataset[i][j] - mean(dataset)[j]
+            centered[i][j] = dataset[i][j] - mu[j]
     return centered
 
 #Calculate Within-Class Scatter matrix
 def withinScatter(dataset):
-    left, right = split(dataset)
-    leftCentered = numpy.asarray(center(left))
-    rightCentered = numpy.asarray(center(right))
-    left_Sw = numpy.dot(leftCentered.T, leftCentered)
-    right_Sw = numpy.dot(rightCentered.T, rightCentered)
-    Sw = left_Sw + right_Sw
+    good, bad = split(dataset)
+    goodCentered = numpy.asarray(center(good))
+    badCentered = numpy.asarray(center(bad))
+    good_Sw = numpy.dot(goodCentered.T, goodCentered)
+    bad_Sw = numpy.dot(badCentered.T, badCentered)
+    Sw = good_Sw + bad_Sw
     return Sw
 
 #Calculate Between-Class Scatter Matrix
 def betweenScatter(dataset):
-    left, right = split(dataset)
-    left_mean, right_mean = mean(left), mean(right)
-    diff_mean = [left_mean[i] - right_mean[i] for i in range(len(left_mean))]
+    good, bad = split(dataset)
+    good_mean, bad_mean = mean(good), mean(bad)
+    diff_mean = [good_mean[i] - bad_mean[i] for i in range(len(good_mean))]
     diff_mean_array = numpy.asarray(diff_mean)
     Sb = numpy.dot(diff_mean_array.T, diff_mean_array)
     return Sb
@@ -65,29 +57,80 @@ def getEigens(dataset):
     eigenvalues, eigenvectors = numpy.linalg.eig(numpy.linalg.inv(Sw).dot(Sb))
     return eigenvalues, eigenvectors
 
+#Function to find the smallest value of r that satisfies a given percentage of retained variance
+def chooseR(eigenvalues, alpha):
+    total_variance = sum(eigenvalues)
+    var = 0
+    i = 0
+    while(var < alpha*total_variance):
+        var += eigenvalues[i]
+        i += 1
+    return i
+
 #Get the dominant eigenvector
 def getW(dataset):
     eigenvalues, eigenvectors = getEigens(dataset)
-    i = numpy.where(eigenvalues == max(eigenvalues))
-    vector = [eigenvectors[i][j] for j in range(1)]
-    return eigenvectors[0]
+    r = chooseR(eigenvalues, 0.9)
+    w = [eigenvectors[:,i].tolist() for i in range(r)]
+    return numpy.asarray(w).T
 
 #Project data onto dominant eigenvector
 def LDA_proj(train_data, test_data):
     w = getW(train_data)
+    #Project train data onto w
+    x = [train_data[i][:-1] for i in range(len(train_data))]
+    train_proj = numpy.dot(numpy.asarray(x), w)
+    good, bad = [], []
+    for i in range(len(train_data)):
+        if(train_data[i][-1] == 1):
+            good.append(train_proj[i])
+        else:
+            bad.append(train_proj[i])
+    threshold = mean([mean(good),mean(bad)])
+    #Project test data onto w
     x = [test_data[i][:-1] for i in range(len(test_data))]
     lda = numpy.dot(numpy.asarray(x), w)
-    return lda
+    return lda, threshold
+
+#Compare two vectors by summing the differences between their corresponding values
+def compare_vectors(vec1, vec2):
+    diff = 0
+    for i in range(len(vec1)):
+        diff += (vec1[i] - vec2[i])
+    if(diff < 0):
+        return -1
+    elif(diff == 0):
+        return 0
+    else:
+        return 1
 
 #Separate projected data into classes based on mean
 def LDA_classify(train_data, test_data):
-    proj_data = LDA_proj(train_data, test_data)
-    mu = numpy.mean(proj_data)
+    proj_data, threshold = LDA_proj(train_data, test_data)
+    count = 0
     for i, row in enumerate(test_data):
-        if proj_data[i] <= mu:
-            row.append(1)
-        else:
+        if(compare_vectors(proj_data[i],threshold) <= 0):
             row.append(0)
-    
-LDA_classify(dataset, dataset)
-print dataset
+        else:
+            row.append(1)
+        #Check to see if our prediction was correct    
+        if(row[-1] == row[-2]):
+            count += 1.0
+    print "Data classified with accuracy of:", count/len(test_data)
+
+#Build dataset out of file
+def load(filename):
+    train = []
+    test = []
+    with open(filename, 'rb') as data_file:
+        data = csv.reader(data_file)
+        for i, row in enumerate(data):
+            if(i < 800):
+                train.append([float(x) for x in row])
+            else:
+                test.append([float(x) for x in row])
+    return train, test
+
+train, test = load("data.txt")
+LDA_proj(train, test)
+LDA_classify(train, test)
