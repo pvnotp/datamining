@@ -66,6 +66,8 @@ def rate(group):
     return max(set(ratings), key=ratings.count)
 
 # Create child splits for a node or make terminal
+#Thanks to Jason Brownlee, whose tutorial was the foundation for this code
+#machinelearningmastery.com/implement-decision-tree-algorithm-scratch-python/.
 def splitNode(node, max_depth, min_size, depth, criterion, words):
     print "Splitting a node: %s %s < %f" % (depth*'-', words[node['index']+1], node['value'])
     left, right = node['groups']
