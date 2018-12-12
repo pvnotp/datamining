@@ -119,11 +119,13 @@ def predict(node, row):
 #Predict class of each row of test data and gauge accuracy
 def classifyData(dataset, tree):
     count = 0
-    for row in dataset:
-        row.append(predict(tree, row))
-        #Check if correction was correct
-        if(row[-1] == row[-2]):
-            count += 1.0
+    with open('results.csv', 'w') as results:
+        for row in dataset:
+            row.append(predict(tree, row))
+            print >>results, row
+            #Check if correction was correct
+            if(row[-1] == row[-2]):
+                count += 1.0
     print "Data classified with accuracy of:", count/len(dataset)
     
 
@@ -145,7 +147,6 @@ def load(filename):
     return words, train, test
 
        
-words, train, test = load("reviews.csv")
+words, train, test = load('reviews.csv')
 tree = buildTree(train, 3, 100, GINI)
 classifyData(test, tree)
-
