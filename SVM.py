@@ -30,7 +30,7 @@ for i in range(0, classes_size):
     if(classes_pred[i] == classes_test[i]):
         count += 1
 
-precision = float(count)/classes_size
+accuracy = float(count)/classes_size
 
-print "Precision: %s" % precision
+print "Accuracy: %s" % precision
 print classes_test
