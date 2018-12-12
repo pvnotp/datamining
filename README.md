@@ -1,5 +1,6 @@
 # datamining
 To run, please download all files into the same folder.
+You will need the pandas module installed.
 
 Run FeatureEng.py to generate reviews.csv.  The following programs will read from reviews.csv to classify data. 
 
