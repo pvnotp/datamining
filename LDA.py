@@ -100,14 +100,16 @@ def distance(vec1, vec2):
 def LDA_classify(train_data, test_data):
     proj_data, good_mean, bad_mean = LDA_proj(train_data, test_data)
     count = 0
-    for i, row in enumerate(test_data):
-        if(distance(proj_data[i], good_mean) < distance(proj_data[i], bad_mean)):
-            row.append(1)
-        else:
-            row.append(0)
-        #Check to see if our prediction was correct    
-        if(row[-1] == row[-2]):
-            count += 1.0
+    with open('results.csv', 'w') as results:
+        for i, row in enumerate(test_data):
+            if(distance(proj_data[i], good_mean) < distance(proj_data[i], bad_mean)):
+                row.append(1)
+            else:
+                row.append(0)
+            print >>results, row
+            #Check to see if our prediction was correct    
+            if(row[-1] == row[-2]):
+                count += 1.0
     print "Data classified with accuracy of:", count/len(test_data)
 
 #Build dataset out of file
