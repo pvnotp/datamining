@@ -1,12 +1,5 @@
-# Split a dataset based on a criterion for a specified attribute
-def split(dataset, index, value):
-    left, right = [], []
-    for row in dataset:
-        if row[index] < value:
-            left.append(row)
-        else:
-            right.append(row)
-    return left, right
+import csv
+import sys
 
 # Calculate probability of a point being in a given class
 def P(c, dataset):
@@ -18,6 +11,16 @@ def P(c, dataset):
             if(row[-1]==c):
                 count += 1
     return count/len(dataset)
+
+# Split a dataset based on a criterion for a specified attribute
+def split(dataset, index, value):
+    left, right = [], []
+    for row in dataset:
+        if row[index] < value:
+            left.append(row)
+        else:
+            right.append(row)
+    return left, right
 
 # Helper function for GINI index
 def G(dataset):
@@ -35,20 +38,22 @@ def GINI(dataset, index, value):
 def negGINI(dataset, index, value):
     return -GINI(dataset, index, value)
 
+
 #Find the criterion that gives the best split on the dataset
 def bestSplit(dataset, criterion):
-    print "Finding best split..."
+    print "Finding best split...please wait"
     if criterion == GINI:
         criterion = negGINI
     best = criterion(dataset, 0, 0)
     best_index, best_value = 0, 0
     for i in range(len(dataset[0])-1):
-        print "Checking splits on attribute", i
+        sys.stdout.write(".")
         attr_values = [row[i] for row in dataset]
         for val in attr_values:
             if criterion(dataset, i, val) > best:
                 best = criterion(dataset, i, val)
                 best_index, best_value = i, val
+    print
     return {'index': best_index, 'value': best_value,
             'groups':split(dataset, best_index, best_value)}
 
@@ -61,8 +66,8 @@ def rate(group):
     return max(set(ratings), key=ratings.count)
 
 # Create child splits for a node or make terminal
-def splitNode(node, max_depth, min_size, depth, criterion):
-    print "Splitting a node..."
+def splitNode(node, max_depth, min_size, depth, criterion, words):
+    print "Splitting a node: %s %s < %f" % (depth*'-', words[node['index']+1], node['value'])
     left, right = node['groups']
     del(node['groups'])
     # check for a no split
@@ -78,13 +83,13 @@ def splitNode(node, max_depth, min_size, depth, criterion):
         node['left'] = rate(left)
     else:
         node['left'] = bestSplit(left, criterion)
-        splitNode(node['left'], max_depth, min_size, depth+1, criterion)
+        splitNode(node['left'], max_depth, min_size, depth+1, criterion, words)
     # process right child
     if len(right) <= min_size:
         node['right'] = rate(right)
     else:
         node['right'] = bestSplit(right, criterion)
-        splitNode(node['right'], max_depth, min_size, depth+1, criterion)
+        splitNode(node['right'], max_depth, min_size, depth+1, criterion, words)
 
 # Build a decision tree
 # Two arguments specify when the tree should stop splitting:
@@ -92,19 +97,9 @@ def splitNode(node, max_depth, min_size, depth, criterion):
 #   min_size sets the smallest acceptable size for a subset of the dataset that can be split
 def buildTree(train, max_depth, min_size, criterion):
     root = bestSplit(train, criterion)
-    splitNode(root, max_depth, min_size, 1, criterion)
+    splitNode(root, max_depth, min_size, 1, criterion, words)
     return root
 
-import csv
-
-# Print out the criterion used for each split in the tree
-def printTree(node, depth=0):
-    if isinstance(node, dict):
-        print('%s[X%d < %f]' % ((depth*' ', (node['index']+1), node['value'])))
-        printTree(node['left'], depth+1)
-        printTree(node['right'], depth+1)
-    else:
-        print('%s[%s]' % ((depth*' ', node)))
 
 # Make a prediction using our tree
 def predict(node, row):
@@ -119,38 +114,36 @@ def predict(node, row):
         else:
             return node['right']
 
+#Predict class of each row of test data and gauge accuracy
 def classifyData(dataset, tree):
     count = 0
     for row in dataset:
         row.append(predict(tree, row))
+        #Check if correction was correct
         if(row[-1] == row[-2]):
             count += 1.0
     print "Data classified with accuracy of:", count/len(dataset)
     
 
-#Get the ratio of correct predictions
-def accuracy(dataset, tree):
-    count = 0
-    for row in dataset:
-        prediction = predict(tree, row)
-        if(row[-1] == prediction):
-            count += 1.0
-    return count/len(dataset)
-          
+
+#Build dataset out of file
 def load(filename):
     train = []
     test = []
+    words = []
     with open(filename, 'rb') as data_file:
         data = csv.reader(data_file)
         for i, row in enumerate(data):
-            if(i < 800):
+            if(i == 0):
+                words = row
+            elif(i > 0 and i < 800):
                 train.append([float(x) for x in row])
             else:
                 test.append([float(x) for x in row])
-    return train, test
-           
+    return words, train, test
+
        
-train, test = load("data.txt")
-tree = buildTree(train, 4, 100, GINI)
-printTree(tree)
+words, train, test = load("reviews.csv")
+tree = buildTree(train, 3, 100, GINI)
 classifyData(test, tree)
+
