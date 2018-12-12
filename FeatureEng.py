@@ -1,47 +1,39 @@
-import collections as coll
-import pandas as pd
-import numpy as np
-
-count = 999
-num_col = 100
-
-#Read Data Set 
-df = pd.read_json('yelp_academic_dataset_review1K.json',lines = True).head(count)
+import pandas as pd  
+from sklearn.model_selection import train_test_split  
+from sklearn.svm import SVC  
 
 
-df2 = df['text'].str.split(' ')
+#Import dataset
+dataset = pd.read_csv('reviews.csv')
 
-#Counts the frequencies of every word in the dataset
-wcount_total = coll.Counter()
-for i in range(0,count):
-    for j in df2.iloc[i]:
-        wcount_total[j] += 1
+#Separate the data (Data,classes)
+Data = dataset.drop('class', axis=1)  
+classes = dataset['class']
 
-ignored_words = {'The','the','it','and','a'}
+#Split the data and do resampling
+Data_train, Data_test, classes_train, classes_test = train_test_split(Data,classes, test_size = 0.20)  
 
-for s in ignored_words:
-    if s in wcount_total:
-        del wcount_total[s]
-        
-#List of most frequent words
-top_words = sorted(wcount_total, key=wcount_total.get, reverse = True)[0:num_col]
+#Apply SVC classifier using a linear kernel
+classifier = SVC(kernel='linear')  
 
-#Count word frequencies by row
-line_count = coll.Counter()
-s = []
-for k in range(0,count):
-    for r in range(0,num_col):
-        s.append(float(df2.iloc[k].count(top_words[r])))
-     
-freq_matrix = pd.DataFrame(np.array(s).reshape(-count,num_col),columns = top_words)
+#Fit the data using train data
+classifier.fit(Data_train, classes_train)
 
-norm_freq_matrix = freq_matrix/freq_matrix.sum(axis=0)
+#Predicted class labels of test data 
+classes_pred = classifier.predict(Data_test)  
 
 
-norm_freq_matrix['class'] = df['stars']
+classes_pred = classes_pred.tolist()
+classes_test = classes_test.tolist()
+classes_size = len(classes_test)
 
-norm_freq_matrix['class'] = norm_freq_matrix['class'].map({0:0,1:0,2:0,3:1,4:1,5:1})
 
-norm_freq_matrix.to_csv('reviews.csv', sep=',', encoding='utf-8',index=False)
+count = 0
+for i in range(0, classes_size):
+    if(classes_pred[i] == classes_test[i]):
+        count += 1
 
-print 'Dataset Created!'
+precision = float(count)/classes_size
+
+print "Accuracy: %s" % precision
+print classes_test
