@@ -1,10 +1,8 @@
 # datamining
-Yelp data project
+To run, please download all files into the same folder.
 
-Some questions:
+Run FeatureEng.py to generate reviews.csv.  The following programs will read from reviews.csv to classify data. 
 
-How many words should we pick as the "most common words"?  Is 1000 enough?
-
-Can we exclude words like "it", "and", "the" etc. ?
-
-Will the data be stored as a tuple [data_set, rating], or will it just be one list with the rating stored as the last value in each row?
+Run SVM.py to classify data using SVM
+Run decision_tre.py to classify data using a decision tree
+Run LDA.py to classify data using LDA
