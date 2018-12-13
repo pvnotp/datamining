@@ -15,8 +15,8 @@ Files List:
     
   JING Documentation:
   
-  - FeatureEng.py - link1
-  - SVM.py - http://www.screencast.com/t/edo0yFa54p
-  - desision_tree.py link3
-  - LDA.py - link4
+  - FeatureEng.py     -> link1
+  - SVM.py            -> http://www.screencast.com/t/edo0yFa54p
+  - desision_tree.py  -> link3
+  - LDA.py            -> link4
   
