@@ -12,3 +12,11 @@ Files List:
     2. Run FeatureEng.py. This will generate a new
        dataset exported as 'reviews.csv'.
     3. Run any of the remaining algorithms
+    
+  JING Documentation:
+  
+  - FeatureEng.py - link1
+  - SVM.py - link2
+  - desision_tree.py link3
+  - LDA.py - link4
+  
