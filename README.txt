@@ -17,6 +17,6 @@ Files List:
   
   - FeatureEng.py     -> http://www.screencast.com/t/HRAyiVcR
   - SVM.py            -> http://www.screencast.com/t/edo0yFa54p
-  - desision_tree.py  -> link3
-  - LDA.py            -> link4
+  - desision_tree.py  -> http://www.screencast.com/t/kZxO2MJfGIc
+  - LDA.py            -> http://www.screencast.com/t/HMKrR8HBLFul
   
